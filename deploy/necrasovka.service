@@ -1,0 +1,45 @@
+[Unit]
+Description=Necrasovka Search Application
+Documentation=https://github.com/your-org/necrasovka
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+Group=root
+WorkingDirectory=/opt/necrasovka
+Environment=COMPOSE_HTTP_TIMEOUT=120
+Environment=DOCKER_CLIENT_TIMEOUT=120
+
+# Команды запуска
+ExecStartPre=/usr/local/bin/docker-compose -f docker-compose.prod.yml pull --quiet
+ExecStart=/usr/local/bin/docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+ExecStartPost=/bin/sleep 10
+
+# Команды остановки
+ExecStop=/usr/local/bin/docker-compose -f docker-compose.prod.yml down
+ExecStopPost=/bin/sleep 5
+
+# Команды перезагрузки
+ExecReload=/usr/local/bin/docker-compose -f docker-compose.prod.yml restart
+
+# Настройки таймаутов
+TimeoutStartSec=300
+TimeoutStopSec=60
+TimeoutSec=300
+
+# Автоматический перезапуск при сбое
+Restart=on-failure
+RestartSec=30
+
+# Настройки безопасности
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/necrasovka
+
+[Install]
+WantedBy=multi-user.target

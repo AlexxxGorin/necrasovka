@@ -117,6 +117,48 @@ def local_changer(query: str) -> str:
     )
     return query.translate(layout)
 
+def detect_publication_type(query: str) -> list[str]:
+    """Определяет тип издания из запроса и возвращает ключевые слова для фильтрации"""
+    query_lower = query.lower()
+    
+    publication_types = {
+        'книга': ['книга', 'книги', 'том', 'тома', 'издание', 'сочинения'],
+        'журнал': ['журнал', 'журналы', 'номер', '№', 'выпуск'],
+        'газета': ['газета', 'газеты', 'ведомости', 'известия', 'правда'],
+        'открытка': ['открытка', 'открытки', 'почтовая'],
+        'спички': ['спички', 'спичечная', 'этикетка'],
+        'плакат': ['плакат', 'плакаты', 'афиша'],
+        'карта': ['карта', 'карты', 'план', 'атлас'],
+    }
+    
+    detected_types = []
+    for pub_type, keywords in publication_types.items():
+        if any(keyword in query_lower for keyword in keywords):
+            detected_types.append(pub_type)
+    
+    return detected_types
+
+
+def extract_clean_query(query: str) -> str:
+    """Убирает из запроса слова типа издания, оставляя только основной поисковый запрос"""
+    query_lower = query.lower()
+    
+    type_words = [
+        'книга', 'книги', 'том', 'тома', 'издание', 'сочинения',
+        'журнал', 'журналы', 'номер', '№', 'выпуск',
+        'газета', 'газеты', 'ведомости', 'известия', 'правда',
+        'открытка', 'открытки', 'почтовая',
+        'спички', 'спичечная', 'этикетка',
+        'плакат', 'плакаты', 'афиша',
+        'карта', 'карты', 'план', 'атлас'
+    ]
+    
+    words = query.split()
+    clean_words = [word for word in words if word.lower() not in type_words]
+    
+    return ' '.join(clean_words) if clean_words else query
+
+
 def coalesce(
     query: str,
     spelling_correction: str,

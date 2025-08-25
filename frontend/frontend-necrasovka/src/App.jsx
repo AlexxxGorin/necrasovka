@@ -51,6 +51,7 @@ export default function App() {
   const [yearRange, setYearRange] = useState([1500, 2025]);
   const [likes, setLikes] = useState({});
   const [selectedTypes, setSelectedTypes] = useState([]);
+  const [searchMode, setSearchMode] = useState("both");
 
   const allTypes = useMemo(() => {
     const s = new Set();
@@ -90,6 +91,7 @@ export default function App() {
     params.set("q", query);
     params.set("start_year", yearRange[0]);
     params.set("end_year", yearRange[1]);
+    params.set("search_mode", searchMode);
 
     try {
       const res = await fetch(`/search?${params.toString()}`);
@@ -134,7 +136,53 @@ export default function App() {
         onChange={setYearRange}
       />
 
-      {/* --- FILTER UI --- */}
+      {/* --- SEARCH MODE FILTER --- */}
+      <div className="bg-white p-4 rounded shadow border">
+        <span className="font-medium text-gray-700 mb-3 block">🎯 Где искать совпадения:</span>
+        <div className="flex flex-wrap gap-4">
+          <label className="inline-flex items-center space-x-2">
+            <input
+              type="radio"
+              value="both"
+              checked={searchMode === "both"}
+              onChange={(e) => setSearchMode(e.target.value)}
+              className="form-radio h-4 w-4 text-blue-600"
+            />
+            <span className="text-sm">
+              <span className="font-medium">Везде</span>
+              <span className="text-gray-500 ml-1">(в заголовках и тексте)</span>
+            </span>
+          </label>
+          <label className="inline-flex items-center space-x-2">
+            <input
+              type="radio"
+              value="titles"
+              checked={searchMode === "titles"}
+              onChange={(e) => setSearchMode(e.target.value)}
+              className="form-radio h-4 w-4 text-blue-600"
+            />
+            <span className="text-sm">
+              <span className="font-medium">Только в заголовках</span>
+              <span className="text-gray-500 ml-1">(FLAT)</span>
+            </span>
+          </label>
+          <label className="inline-flex items-center space-x-2">
+            <input
+              type="radio"
+              value="text"
+              checked={searchMode === "text"}
+              onChange={(e) => setSearchMode(e.target.value)}
+              className="form-radio h-4 w-4 text-blue-600"
+            />
+            <span className="text-sm">
+              <span className="font-medium">Только в тексте</span>
+              <span className="text-gray-500 ml-1">(NESTED)</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      {/* --- TYPE FILTER UI --- */}
       <div className="flex flex-wrap gap-4 items-center mt-4 mb-2">
         <span className="font-medium">Фильтр по типу:</span>
         {allTypes.map((type) => (

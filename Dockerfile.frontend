@@ -1,0 +1,42 @@
+# Dockerfile для фронтенда (продакшн)
+# Этап 1: Сборка
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Копируем package.json и package-lock.json
+COPY frontend/frontend-necrasovka/package*.json ./
+
+# Устанавливаем все зависимости (включая dev для сборки)
+RUN npm ci
+
+# Копируем исходный код
+COPY frontend/frontend-necrasovka/ ./
+
+# Собираем приложение для продакшн
+RUN npm run build
+
+# Удаляем node_modules для уменьшения размера образа
+RUN rm -rf node_modules
+
+# Этап 2: Продакшн
+FROM nginx:alpine
+
+# Копируем собранное приложение
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Копируем конфигурацию Nginx
+COPY deploy/nginx.conf /etc/nginx/nginx.conf
+
+# Настраиваем права доступа (используем существующего пользователя nginx)
+RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run /var/log/nginx
+
+# Экспонируем порт
+EXPOSE 80
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+
+# Запуск Nginx
+CMD ["nginx", "-g", "daemon off;"]

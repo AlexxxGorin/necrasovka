@@ -34,21 +34,61 @@ def build_flat_query(query_list: list[str], start_year: str = None, end_year: st
         "query": {
             "bool": {
                 "must": must_filters,
-                "should": [
-                    {
-                        "multi_match": {
-                            "query": joined_query,
-                            "fields": [
-                                "title^4",
-                                "book_name^4",
-                                "description^3"
-                            ],
-                            "type": "most_fields",
-                            # "fuzziness": "AUTO",
-                            "operator": "or"
-                        }
-                    }
-                ],
+                        "should": [
+            # Точное фразовое совпадение в заголовке - максимальный буст только если ВСЕ слова есть
+            {
+                "multi_match": {
+                    "query": joined_query,
+                    "fields": [
+                        "title^25",
+                        "book_name^25"
+                    ],
+                    "type": "phrase",
+                    "boost": 10.0
+                }
+            },
+            # Все слова должны присутствовать в заголовке (AND)
+            {
+                "multi_match": {
+                    "query": joined_query,
+                    "fields": [
+                        "title^15",
+                        "book_name^15"
+                    ],
+                    "type": "best_fields",
+                    "operator": "and",
+                    "boost": 5.0
+                }
+            },
+            # Все слова должны присутствовать где-то в документе
+            {
+                "multi_match": {
+                    "query": joined_query,
+                    "fields": [
+                        "title^8",
+                        "book_name^8",
+                        "description^4"
+                    ],
+                    "type": "cross_fields",
+                    "operator": "and",
+                    "boost": 3.0
+                }
+            },
+            # Частичное совпадение в заголовках (с пониженным бустом)
+            {
+                "multi_match": {
+                    "query": joined_query,
+                    "fields": [
+                        "title^4",
+                        "book_name^4",
+                        "description^2"
+                    ],
+                    "type": "best_fields",
+                    "operator": "or",
+                    "boost": 1.0
+                }
+            }
+        ],
                 "minimum_should_match": 1
             }
         },
@@ -105,14 +145,38 @@ def build_nested_query(query_list: list[str], start_year: str = None, end_year: 
                         "nested": {
                             "path": "pages",
                             "query": {
-                                "multi_match": {
-                                    "query": joined_query,
-                                    "fields": [
-                                        "pages.book_page_text^8"
+                                "bool": {
+                                    "should": [
+                                        # Точная фраза в тексте - максимальный буст
+                                        {
+                                            "multi_match": {
+                                                "query": joined_query,
+                                                "fields": ["pages.book_page_text^15"],
+                                                "type": "phrase",
+                                                "boost": 3.0
+                                            }
+                                        },
+                                        # Все слова должны быть в тексте страницы
+                                        {
+                                            "multi_match": {
+                                                "query": joined_query,
+                                                "fields": ["pages.book_page_text^10"],
+                                                "type": "best_fields",
+                                                "operator": "and",
+                                                "boost": 2.0
+                                            }
+                                        },
+                                        # Частичное совпадение в тексте
+                                        {
+                                            "multi_match": {
+                                                "query": joined_query,
+                                                "fields": ["pages.book_page_text^5"],
+                                                "type": "best_fields",
+                                                "operator": "or"
+                                            }
+                                        }
                                     ],
-                                    "type": "most_fields",
-                                    # "fuzziness": "AUTO",
-                                    "operator": "and"
+                                    "minimum_should_match": 1
                                 }
                             },
                             "inner_hits": {

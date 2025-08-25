@@ -12,7 +12,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/search': {
-        target: 'http://localhost:8076',
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/like': {
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       }
